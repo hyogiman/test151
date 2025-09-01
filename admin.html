@@ -6,8 +6,8 @@
     <title>관리자 페이지 - 엔지니어 교육 게임</title>
     
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <style>
         * {
@@ -327,10 +327,15 @@
 
             // 현재 메시지 실시간 리스너
             messageUnsubscribe = db.collection(messagesCollection).doc('current')
-                .onSnapshot((doc) => {
-                    if (doc.exists()) {
+                .onSnapshot((docSnapshot) => {
+                    console.log('메시지 리스너 호출됨:', docSnapshot);
+                    console.log('docSnapshot.exists:', docSnapshot.exists);
+                    
+                    if (docSnapshot.exists) {
+                        console.log('메시지가 존재함 - 상태 업데이트');
                         setCurrentMessage('팀별로 다른 메시지가 할당되었습니다.');
                     } else {
+                        console.log('메시지가 없음 - 상태 초기화');
                         setCurrentMessage('');
                     }
                 }, (error) => {
@@ -353,6 +358,9 @@
 
         // 랜덤 메시지 표시 (팀별로 다른 메시지, 같은 팀 내에서는 서로 다른 메시지)
         async function showRandomMessage() {
+            console.log('showRandomMessage 호출됨');
+            console.log('현재 활성 참가자:', activeParticipants);
+            
             if (activeParticipants.length === 0) {
                 alert('⚠️ 현재 활성 참가자가 없습니다. 참가자들이 페이지를 열어주세요.');
                 return;
@@ -366,6 +374,8 @@
                 }
                 teamGroups[participant.team].push(participant);
             });
+            
+            console.log('팀 그룹:', teamGroups);
             
             // 각 팀별로 메시지 할당
             const assignedMessages = {};
@@ -389,12 +399,17 @@
                 });
             });
             
+            console.log('할당된 메시지:', assignedMessages);
+            
             try {
                 // Firebase에 메시지 저장
-                await db.collection(messagesCollection).doc('current').set({
+                const docRef = db.collection(messagesCollection).doc('current');
+                await docRef.set({
                     assignedMessages: assignedMessages,
                     timestamp: new Date().toISOString()
                 });
+                
+                console.log('Firebase에 메시지 저장 완료');
                 
                 // 성공 메시지 표시
                 const teamCount = Object.keys(teamGroups).length;
