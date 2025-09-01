@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>엔지니어 교육 게임</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            max-width: 500px;
+            width: 100%;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .title {
+            font-size: 1.8rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .message-display {
+            font-size: 1.4rem;
+            font-weight: 500;
+            color: #2c3e50;
+            margin: 20px 0;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.5;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 8px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .button:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .reset-button {
+            background: #e74c3c;
+        }
+
+        .reset-button:hover {
+            background: #c0392b;
+        }
+
+        .input-field {
+            width: 100%;
+            max-width: 250px;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: #3498db;
+        }
+
+        .info-text {
+            font-size: 0.85rem;
+            color: #95a5a6;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #e8f5e8;
+            color: #27ae60;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin: 2px;
+        }
+
+        .participant-info {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        /* 모바일 대응 */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 20px 15px;
+                min-height: 350px;
+            }
+            
+            .title {
+                font-size: 1.5rem;
+            }
+            
+            .message-display {
+                font-size: 1.2rem;
+                min-height: 60px;
+                padding: 15px;
+            }
+            
+            .button {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+            
+            .input-field {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">엔지니어 교육 게임</h1>
+        
+        <!-- 로그인 폼 -->
+        <div id="login-form">
+            <h2 class="subtitle">참가자 정보 입력</h2>
+            <div style="margin: 20px 0;">
+                <input type="text" id="team-input" placeholder="팀명을 입력하세요" class="input-field">
+                <input type="text" id="employee-input" placeholder="사번을 입력하세요" class="input-field">
+            </div>
+            <button class="button" onclick="login()">참가하기</button>
+        </div>
+
+        <!-- 메인 화면 -->
+        <div id="main-screen" style="display: none;">
+            <p class="subtitle">관리자가 제시문을 보내면 여기에 표시됩니다</p>
+            
+            <div class="participant-info">
+                <div>팀: <span id="team-display"></span></div>
+                <div>사번: <span id="employee-display"></span></div>
+                <div>ID: <span id="participant-id-display"></span></div>
+            </div>
+            
+            <div class="message-display" id="participant-message">
+                대기 중...
+            </div>
+            
+            <p class="info-text" id="participant-hint">
+                관리자가 "랜덤 메시지 표시" 버튼을 누르면 제시문이 나타납니다
+            </p>
+            
+            <button class="button reset-button" onclick="logout()">다른 계정으로 참가</button>
+        </div>
+    </div>
+
+    <script>
+        const messages = [
+            "효율적인 코드 리뷰 프로세스를 설계해보세요",
+            "마이크로서비스 아키텍처의 장단점을 분석해보세요",
+            "데이터베이스 성능 최적화 전략을 제시해보세요",
+            "보안 취약점을 찾아내는 방법을 설명해보세요",
+            "사용자 경험을 개선하는 UI/UX 설계 원칙을 설명해보세요",
+            "클라우드 네이티브 애플리케이션 개발 방법론을 설명해보세요",
+            "DevOps 파이프라인을 구축하는 단계별 방법을 제시해보세요",
+            "대용량 데이터 처리 시스템을 설계해보세요",
+            "모바일 앱 성능 최적화 기법을 설명해보세요",
+            "API 설계의 베스트 프랙티스를 제시해보세요",
+            "테스트 자동화 전략을 수립해보세요",
+            "모니터링 및 로깅 시스템을 설계해보세요",
+            "스케일러블한 웹 애플리케이션 아키텍처를 제안해보세요",
+            "데이터 마이그레이션 전략을 수립해보세요",
+            "실시간 데이터 처리 시스템을 설계해보세요"
+        ];
+
+        let currentMessage = '';
+        let participantId = '';
+        let teamName = '';
+        let employeeNumber = '';
+
+        // 페이지 로드 시 초기화
+        window.onload = function() {
+            // 저장된 참가자 정보 확인
+            const savedTeam = localStorage.getItem('participantTeam');
+            const savedEmployee = localStorage.getItem('participantEmployee');
+            
+            if (savedTeam && savedEmployee) {
+                // 이미 로그인된 경우
+                teamName = savedTeam;
+                employeeNumber = savedEmployee;
+                participantId = generateParticipantId(teamName, employeeNumber);
+                showMainScreen();
+            } else {
+                // 로그인 폼 표시
+                showLoginForm();
+            }
+            
+            // 실시간 리스너 시작
+            startRealtimeListener();
+        };
+
+        // 참가자 ID 생성
+        function generateParticipantId(team, employee) {
+            return `${team}_${employee}`;
+        }
+
+        // 로그인
+        function login() {
+            const teamInput = document.getElementById('team-input').value.trim();
+            const employeeInput = document.getElementById('employee-input').value.trim();
+            
+            if (!teamInput || !employeeInput) {
+                alert('팀명과 사번을 모두 입력해주세요.');
+                return;
+            }
+            
+            teamName = teamInput;
+            employeeNumber = employeeInput;
+            participantId = generateParticipantId(teamName, employeeNumber);
+            
+            // 로컬 스토리지에 저장
+            localStorage.setItem('participantTeam', teamName);
+            localStorage.setItem('participantEmployee', employeeNumber);
+            localStorage.setItem('participantId', participantId);
+            
+            // 활성 참가자 목록에 추가
+            addToActiveParticipants();
+            
+            showMainScreen();
+        }
+
+        // 로그아웃
+        function logout() {
+            // 로컬 스토리지에서 제거
+            localStorage.removeItem('participantTeam');
+            localStorage.removeItem('participantEmployee');
+            localStorage.removeItem('participantId');
+            
+            // 활성 참가자 목록에서 제거
+            removeFromActiveParticipants();
+            
+            showLoginForm();
+        }
+
+        // 활성 참가자 목록에 추가
+        function addToActiveParticipants() {
+            const activeParticipants = JSON.parse(localStorage.getItem('activeParticipants') || '[]');
+            const participantInfo = {
+                id: participantId,
+                team: teamName,
+                employee: employeeNumber,
+                timestamp: Date.now()
+            };
+            
+            // 중복 제거
+            const filtered = activeParticipants.filter(p => p.id !== participantId);
+            filtered.push(participantInfo);
+            
+            localStorage.setItem('activeParticipants', JSON.stringify(filtered));
+            
+            // 다른 탭에 알림
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'activeParticipants',
+                newValue: JSON.stringify(filtered)
+            }));
+        }
+
+        // 활성 참가자 목록에서 제거
+        function removeFromActiveParticipants() {
+            const activeParticipants = JSON.parse(localStorage.getItem('activeParticipants') || '[]');
+            const filtered = activeParticipants.filter(p => p.id !== participantId);
+            localStorage.setItem('activeParticipants', JSON.stringify(filtered));
+            
+            // 다른 탭에 알림
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'activeParticipants',
+                newValue: JSON.stringify(filtered)
+            }));
+        }
+
+        // 로그인 폼 표시
+        function showLoginForm() {
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('main-screen').style.display = 'none';
+        }
+
+        // 메인 화면 표시
+        function showMainScreen() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('main-screen').style.display = 'block';
+            
+            // 정보 표시
+            document.getElementById('team-display').textContent = teamName;
+            document.getElementById('employee-display').textContent = employeeNumber;
+            document.getElementById('participant-id-display').textContent = participantId;
+            
+            // 할당된 메시지 확인
+            checkAssignedMessage();
+        }
+
+        // 실시간 리스너 시작
+        function startRealtimeListener() {
+            // 초기 메시지 확인
+            checkAssignedMessage();
+            
+            // 실시간 이벤트 리스너
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'assignedMessages' || e.key === 'messageTimestamp') {
+                    checkAssignedMessage();
+                }
+            });
+            
+            // 주기적 확인 (백업용, 1초마다)
+            setInterval(checkAssignedMessage, 1000);
+        }
+
+        // 할당된 메시지 확인
+        function checkAssignedMessage() {
+            const assignedMessages = localStorage.getItem('assignedMessages');
+            const messageTimestamp = localStorage.getItem('messageTimestamp');
+            
+            if (assignedMessages && messageTimestamp) {
+                try {
+                    const messages = JSON.parse(assignedMessages);
+                    const timestamp = parseInt(messageTimestamp);
+                    
+                    // 최근 60초 내에 할당된 메시지인지 확인
+                    if (Date.now() - timestamp < 60000) {
+                        if (messages[participantId]) {
+                            currentMessage = messages[participantId];
+                            updateParticipantDisplay();
+                        }
+                    } else {
+                        // 시간이 지난 메시지는 제거
+                        currentMessage = '';
+                        updateParticipantDisplay();
+                    }
+                } catch (error) {
+                    console.error('메시지 파싱 오류:', error);
+                }
+            } else {
+                // 메시지가 없으면 빈 화면으로
+                currentMessage = '';
+                updateParticipantDisplay();
+            }
+        }
+
+        // 참가자 화면 업데이트
+        function updateParticipantDisplay() {
+            const participantMessage = document.getElementById('participant-message');
+            const participantHint = document.getElementById('participant-hint');
+            
+            if (currentMessage) {
+                participantMessage.textContent = currentMessage;
+                participantHint.style.display = 'none';
+            } else {
+                participantMessage.textContent = '대기 중...';
+                participantHint.style.display = 'block';
+            }
+        }
+
+        // 페이지 언로드 시 활성 참가자 목록에서 제거
+        window.addEventListener('beforeunload', function() {
+            removeFromActiveParticipants();
+        });
+    </script>
+</body>
+</html> 
