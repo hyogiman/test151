@@ -274,7 +274,7 @@
                     <input type="text" id="team-input" placeholder="팀명을 입력하세요" class="input-field">
                 </div>
                 <div class="form-group">
-                    <input type="text" id="employee-input" placeholder="사번을 입력하세요" class="input-field">
+                    <input type="text" id="employee-input" placeholder="성명을 입력하세요" class="input-field">
                 </div>
             </div>
             <button class="button" onclick="login()">🚀 참가하기</button>
@@ -286,7 +286,7 @@
             
             <div class="participant-info">
                 <div><strong>팀:</strong> <span id="team-display"></span></div>
-                <div><strong>사번:</strong> <span id="employee-display"></span></div>
+                <div><strong>성명:</strong> <span id="employee-display"></span></div>
             </div>
             
             <div class="message-display" id="participant-message">
@@ -355,7 +355,7 @@
             const employeeInput = document.getElementById('employee-input').value.trim();
             
             if (!teamInput || !employeeInput) {
-                alert('팀명과 사번을 모두 입력해주세요.');
+                alert('팀명과 성명을 모두 입력해주세요.');
                 return;
             }
             
@@ -423,7 +423,7 @@
                 const existingDoc = await db.collection(participantsCollection).doc(id).get();
                 if (existingDoc.exists) {
                     console.log('이미 로그인된 참가자:', id);
-                    alert('⚠️ 이미 로그인된 계정입니다. 다른 팀명이나 사번을 사용해주세요.');
+                    alert('⚠️ 이미 로그인된 계정입니다. 다른 팀명이나 성명을 사용해주세요.');
                     return false;
                 }
                 
@@ -569,4 +569,5 @@
 </body>
 
 </html> 
+
 
