@@ -182,6 +182,139 @@
             color: #2e7d32;
         }
 
+        .participant-management {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f8f0;
+            border-radius: 6px;
+            border: 1px solid #4caf50;
+        }
+
+        .participant-management h4 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .management-controls, .message-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .small-button {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .message-item {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+            text-align: left;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .message-item .message-actions {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 5px;
+        }
+
+        .message-item .message-actions button {
+            padding: 4px 8px;
+            font-size: 0.7rem;
+            margin: 0;
+        }
+
         /* 모바일 대응 */
         @media (max-width: 768px) {
             body {
@@ -228,11 +361,25 @@
             <p>참가자들이 위 링크로 접속하여 팀명과 사번을 입력한 후 제시문을 확인합니다.</p>
             <p>현재 활성 참가자 수: <span id="active-participants-count">확인 중...</span></p>
             <div id="participants-list" class="participants-list"></div>
+            
+            <!-- 참가자 관리 섹션 -->
+            <div class="participant-management">
+                <h4>👥 참가자 관리</h4>
+                <div class="management-controls">
+                    <button class="button small-button" onclick="showAddParticipantForm()">➕ 참가자 추가</button>
+                    <button class="button small-button reset-button" onclick="clearAllParticipants()">🗑️ 모든 참가자 삭제</button>
+                </div>
+            </div>
         </div>
         
         <div class="admin-controls">
             <div class="message-list">
-                <h3>📋 제시문 목록 (총 15개)</h3>
+                <h3>📋 제시문 목록 (총 <span id="message-count">15</span>개)</h3>
+                <div class="message-controls">
+                    <button class="button small-button" onclick="showAddMessageForm()">➕ 제시문 추가</button>
+                    <button class="button small-button" onclick="showEditMessageForm()">✏️ 제시문 수정</button>
+                    <button class="button small-button reset-button" onclick="resetToDefaultMessages()">🔄 기본 제시문으로 복원</button>
+                </div>
                 <div id="message-list"></div>
             </div>
 
@@ -248,6 +395,70 @@
             <div id="current-message-display" style="display: none;">
                 <h3>📺 현재 표시 중인 메시지:</h3>
                 <div class="message-display" id="admin-current-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 참가자 추가 모달 -->
+    <div id="addParticipantModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">➕ 참가자 추가</span>
+                <span class="close" onclick="closeModal('addParticipantModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label for="newTeam">팀명:</label>
+                <input type="text" id="newTeam" placeholder="팀명을 입력하세요">
+            </div>
+            <div class="form-group">
+                <label for="newEmployee">사번:</label>
+                <input type="text" id="newEmployee" placeholder="사번을 입력하세요">
+            </div>
+            <div class="modal-buttons">
+                <button class="button" onclick="addParticipant()">추가</button>
+                <button class="button reset-button" onclick="closeModal('addParticipantModal')">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 제시문 추가 모달 -->
+    <div id="addMessageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">➕ 제시문 추가</span>
+                <span class="close" onclick="closeModal('addMessageModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label for="newMessage">제시문:</label>
+                <textarea id="newMessage" placeholder="새로운 제시문을 입력하세요"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="button" onclick="addMessage()">추가</button>
+                <button class="button reset-button" onclick="closeModal('addMessageModal')">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 제시문 수정 모달 -->
+    <div id="editMessageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">✏️ 제시문 수정</span>
+                <span class="close" onclick="closeModal('editMessageModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label for="editMessageIndex">제시문 번호:</label>
+                <select id="editMessageIndex">
+                    <!-- 동적으로 생성됨 -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="editMessageText">제시문 내용:</label>
+                <textarea id="editMessageText" placeholder="제시문을 수정하세요"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="button" onclick="updateMessage()">수정</button>
+                <button class="button reset-button" onclick="closeModal('editMessageModal')">취소</button>
             </div>
         </div>
     </div>
@@ -346,12 +557,21 @@
         // 메시지 목록 생성
         function createMessageList() {
             const messageList = document.getElementById('message-list');
+            const messageCount = document.getElementById('message-count');
             messageList.innerHTML = '';
+            
+            messageCount.textContent = messages.length;
             
             messages.forEach((message, index) => {
                 const div = document.createElement('div');
                 div.className = 'message-item';
-                div.innerHTML = `<strong>${index + 1}.</strong> ${message}`;
+                div.innerHTML = `
+                    <strong>${index + 1}.</strong> ${message}
+                    <div class="message-actions">
+                        <button class="button small-button" onclick="editMessage(${index})">✏️</button>
+                        <button class="button small-button reset-button" onclick="deleteMessage(${index})">🗑️</button>
+                    </div>
+                `;
                 messageList.appendChild(div);
             });
         }
@@ -478,6 +698,186 @@
             } else {
                 currentMessageDisplay.style.display = 'none';
             }
+        }
+
+        // 모달 관련 함수들
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // 참가자 관리 함수들
+        function showAddParticipantForm() {
+            document.getElementById('newTeam').value = '';
+            document.getElementById('newEmployee').value = '';
+            showModal('addParticipantModal');
+        }
+
+        async function addParticipant() {
+            const team = document.getElementById('newTeam').value.trim();
+            const employee = document.getElementById('newEmployee').value.trim();
+            
+            if (!team || !employee) {
+                alert('팀명과 사번을 모두 입력해주세요.');
+                return;
+            }
+            
+            const id = `${team}_${employee}`;
+            
+            try {
+                await db.collection(participantsCollection).doc(id).set({
+                    id: id,
+                    team: team,
+                    employee: employee,
+                    timestamp: new Date().toISOString()
+                });
+                
+                alert('✅ 참가자가 추가되었습니다!');
+                closeModal('addParticipantModal');
+            } catch (error) {
+                console.error('참가자 추가 오류:', error);
+                alert('❌ 참가자 추가에 실패했습니다.');
+            }
+        }
+
+        async function clearAllParticipants() {
+            if (!confirm('⚠️ 모든 참가자를 삭제하시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                const snapshot = await db.collection(participantsCollection).get();
+                const batch = db.batch();
+                
+                snapshot.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+                
+                await batch.commit();
+                alert('✅ 모든 참가자가 삭제되었습니다!');
+            } catch (error) {
+                console.error('참가자 삭제 오류:', error);
+                alert('❌ 참가자 삭제에 실패했습니다.');
+            }
+        }
+
+        // 제시문 관리 함수들
+        function showAddMessageForm() {
+            document.getElementById('newMessage').value = '';
+            showModal('addMessageModal');
+        }
+
+        function addMessage() {
+            const newMessage = document.getElementById('newMessage').value.trim();
+            
+            if (!newMessage) {
+                alert('제시문을 입력해주세요.');
+                return;
+            }
+            
+            messages.push(newMessage);
+            createMessageList();
+            closeModal('addMessageModal');
+            alert('✅ 제시문이 추가되었습니다!');
+        }
+
+        function showEditMessageForm() {
+            const select = document.getElementById('editMessageIndex');
+            const textarea = document.getElementById('editMessageText');
+            
+            select.innerHTML = '';
+            messages.forEach((message, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${index + 1}. ${message.substring(0, 30)}...`;
+                select.appendChild(option);
+            });
+            
+            if (messages.length > 0) {
+                textarea.value = messages[0];
+                select.onchange = function() {
+                    textarea.value = messages[this.value];
+                };
+            }
+            
+            showModal('editMessageModal');
+        }
+
+        function updateMessage() {
+            const index = parseInt(document.getElementById('editMessageIndex').value);
+            const newText = document.getElementById('editMessageText').value.trim();
+            
+            if (!newText) {
+                alert('제시문을 입력해주세요.');
+                return;
+            }
+            
+            messages[index] = newText;
+            createMessageList();
+            closeModal('editMessageModal');
+            alert('✅ 제시문이 수정되었습니다!');
+        }
+
+        function editMessage(index) {
+            const select = document.getElementById('editMessageIndex');
+            const textarea = document.getElementById('editMessageText');
+            
+            select.innerHTML = '';
+            messages.forEach((message, i) => {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${i + 1}. ${message.substring(0, 30)}...`;
+                if (i === index) option.selected = true;
+                select.appendChild(option);
+            });
+            
+            textarea.value = messages[index];
+            select.onchange = function() {
+                textarea.value = messages[this.value];
+            };
+            
+            showModal('editMessageModal');
+        }
+
+        function deleteMessage(index) {
+            if (!confirm(`⚠️ 제시문 "${messages[index].substring(0, 30)}..."을 삭제하시겠습니까?`)) {
+                return;
+            }
+            
+            messages.splice(index, 1);
+            createMessageList();
+            alert('✅ 제시문이 삭제되었습니다!');
+        }
+
+        function resetToDefaultMessages() {
+            if (!confirm('⚠️ 기본 제시문으로 복원하시겠습니까? 현재 제시문들이 모두 삭제됩니다.')) {
+                return;
+            }
+            
+            messages.length = 0;
+            messages.push(
+                "효율적인 코드 리뷰 프로세스를 설계해보세요",
+                "마이크로서비스 아키텍처의 장단점을 분석해보세요",
+                "데이터베이스 성능 최적화 전략을 제시해보세요",
+                "보안 취약점을 찾아내는 방법을 설명해보세요",
+                "사용자 경험을 개선하는 UI/UX 설계 원칙을 설명해보세요",
+                "클라우드 네이티브 애플리케이션 개발 방법론을 설명해보세요",
+                "DevOps 파이프라인을 구축하는 단계별 방법을 제시해보세요",
+                "대용량 데이터 처리 시스템을 설계해보세요",
+                "모바일 앱 성능 최적화 기법을 설명해보세요",
+                "API 설계의 베스트 프랙티스를 제시해보세요",
+                "테스트 자동화 전략을 수립해보세요",
+                "모니터링 및 로깅 시스템을 설계해보세요",
+                "스케일러블한 웹 애플리케이션 아키텍처를 제안해보세요",
+                "데이터 마이그레이션 전략을 수립해보세요",
+                "실시간 데이터 처리 시스템을 설계해보세요"
+            );
+            
+            createMessageList();
+            alert('✅ 기본 제시문으로 복원되었습니다!');
         }
 
         // 페이지 언로드 시 리스너 해제
