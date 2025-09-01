@@ -15,13 +15,7 @@
 ### 1. GitHub Pages 배포
 
 ```bash
-# 의존성 설치
-npm install
-
-# 빌드
-npm run build
-
-# GitHub에 푸시
+# GitHub 저장소 생성 후 파일 업로드
 git add .
 git commit -m "Initial commit"
 git push origin main
@@ -49,7 +43,7 @@ firebase deploy
 
 1. [Firebase Console](https://console.firebase.google.com/)에서 새 프로젝트 생성
 2. Firestore Database 활성화
-3. `src/firebase.js` 파일의 설정 정보를 업데이트:
+3. `index.html`과 `admin.html` 파일의 Firebase 설정 정보를 업데이트:
 
 ```javascript
 const firebaseConfig = {
@@ -78,13 +72,13 @@ service cloud.firestore {
 
 ## 📱 사용법
 
-### 관리자 페이지 (`/admin`)
+### 관리자 페이지 (`admin.html`)
 1. 15개의 제시문 목록을 확인
 2. "🎲 랜덤 메시지 표시" 버튼을 클릭하여 참가자에게 팀별 메시지 전송
 3. "🔄 화면 리셋" 버튼을 클릭하여 모든 참가자 화면을 빈 화면으로 초기화
 4. 실시간으로 활성 참가자 수와 목록 확인
 
-### 참가자 페이지 (`/`)
+### 참가자 페이지 (`index.html`)
 1. 팀명과 사번을 입력하여 참가
 2. 관리자가 제시문을 전송할 때까지 대기
 3. 제시문이 전송되면 실시간으로 화면에 표시
@@ -117,11 +111,10 @@ messages/
 
 ## 🛠️ 기술 스택
 
-- **Frontend**: React 18
+- **Frontend**: 순수 HTML5, CSS3, JavaScript
 - **Backend**: Firebase Firestore
 - **Hosting**: GitHub Pages / Firebase Hosting
-- **Styling**: CSS3 (모바일 대응)
-- **State Management**: React Hooks
+- **실시간 통신**: Firebase Firestore onSnapshot
 
 ## 📝 제시문 목록
 

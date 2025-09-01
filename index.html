@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>엔지니어 교육 게임</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -121,16 +126,6 @@
             text-align: center;
         }
 
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            background: #e8f5e8;
-            color: #27ae60;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            margin: 2px;
-        }
-
         .participant-info {
             background: #f8f9fa;
             border-radius: 6px;
@@ -139,6 +134,12 @@
             text-align: center;
             font-size: 0.9rem;
             color: #6c757d;
+        }
+
+        .loading {
+            font-size: 1.5rem;
+            color: #666;
+            font-style: italic;
         }
 
         /* 모바일 대응 */
@@ -210,28 +211,30 @@
     </div>
 
     <script>
-        const messages = [
-            "효율적인 코드 리뷰 프로세스를 설계해보세요",
-            "마이크로서비스 아키텍처의 장단점을 분석해보세요",
-            "데이터베이스 성능 최적화 전략을 제시해보세요",
-            "보안 취약점을 찾아내는 방법을 설명해보세요",
-            "사용자 경험을 개선하는 UI/UX 설계 원칙을 설명해보세요",
-            "클라우드 네이티브 애플리케이션 개발 방법론을 설명해보세요",
-            "DevOps 파이프라인을 구축하는 단계별 방법을 제시해보세요",
-            "대용량 데이터 처리 시스템을 설계해보세요",
-            "모바일 앱 성능 최적화 기법을 설명해보세요",
-            "API 설계의 베스트 프랙티스를 제시해보세요",
-            "테스트 자동화 전략을 수립해보세요",
-            "모니터링 및 로깅 시스템을 설계해보세요",
-            "스케일러블한 웹 애플리케이션 아키텍처를 제안해보세요",
-            "데이터 마이그레이션 전략을 수립해보세요",
-            "실시간 데이터 처리 시스템을 설계해보세요"
-        ];
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2NNdceq5AGojaGgQ-i9t4dxPU-ccecDc",
+            authDomain: "tst1121-6983e.firebaseapp.com",
+            projectId: "tst1121-6983e",
+            storageBucket: "tst1121-6983e.firebasestorage.app",
+            messagingSenderId: "84052633103",
+            appId: "1:84052633103:web:deb08e91dfa199a524e57a",
+            measurementId: "G-8Q971YBLLE"
+        };
+
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 컬렉션 이름
+        const participantsCollection = 'participants';
+        const messagesCollection = 'messages';
 
         let currentMessage = '';
         let participantId = '';
         let teamName = '';
         let employeeNumber = '';
+        let messageUnsubscribe = null;
 
         // 페이지 로드 시 초기화
         window.onload = function() {
@@ -243,24 +246,17 @@
                 // 이미 로그인된 경우
                 teamName = savedTeam;
                 employeeNumber = savedEmployee;
-                participantId = generateParticipantId(teamName, employeeNumber);
+                participantId = `${savedTeam}_${savedEmployee}`;
                 showMainScreen();
+                addToActiveParticipants(savedTeam, savedEmployee);
             } else {
                 // 로그인 폼 표시
                 showLoginForm();
             }
-            
-            // 실시간 리스너 시작
-            startRealtimeListener();
         };
 
-        // 참가자 ID 생성
-        function generateParticipantId(team, employee) {
-            return `${team}_${employee}`;
-        }
-
         // 로그인
-        function login() {
+        async function login() {
             const teamInput = document.getElementById('team-input').value.trim();
             const employeeInput = document.getElementById('employee-input').value.trim();
             
@@ -269,68 +265,68 @@
                 return;
             }
             
+            const id = `${teamInput}_${employeeInput}`;
+            
             teamName = teamInput;
             employeeNumber = employeeInput;
-            participantId = generateParticipantId(teamName, employeeNumber);
+            participantId = id;
             
             // 로컬 스토리지에 저장
             localStorage.setItem('participantTeam', teamName);
             localStorage.setItem('participantEmployee', employeeNumber);
-            localStorage.setItem('participantId', participantId);
             
-            // 활성 참가자 목록에 추가
-            addToActiveParticipants();
+            // Firebase에 참가자 추가
+            await addToActiveParticipants(teamName, employeeNumber);
             
             showMainScreen();
         }
 
         // 로그아웃
-        function logout() {
+        async function logout() {
+            await removeFromActiveParticipants();
+            
             // 로컬 스토리지에서 제거
             localStorage.removeItem('participantTeam');
             localStorage.removeItem('participantEmployee');
-            localStorage.removeItem('participantId');
             
-            // 활성 참가자 목록에서 제거
-            removeFromActiveParticipants();
+            // Firebase 리스너 해제
+            if (messageUnsubscribe) {
+                messageUnsubscribe();
+                messageUnsubscribe = null;
+            }
+            
+            setTeamName('');
+            setEmployeeNumber('');
+            setParticipantId('');
+            setCurrentMessage('');
             
             showLoginForm();
         }
 
         // 활성 참가자 목록에 추가
-        function addToActiveParticipants() {
-            const activeParticipants = JSON.parse(localStorage.getItem('activeParticipants') || '[]');
-            const participantInfo = {
-                id: participantId,
-                team: teamName,
-                employee: employeeNumber,
-                timestamp: Date.now()
-            };
-            
-            // 중복 제거
-            const filtered = activeParticipants.filter(p => p.id !== participantId);
-            filtered.push(participantInfo);
-            
-            localStorage.setItem('activeParticipants', JSON.stringify(filtered));
-            
-            // 다른 탭에 알림
-            window.dispatchEvent(new StorageEvent('storage', {
-                key: 'activeParticipants',
-                newValue: JSON.stringify(filtered)
-            }));
+        async function addToActiveParticipants(team, employee) {
+            const id = `${team}_${employee}`;
+            try {
+                await db.collection(participantsCollection).doc(id).set({
+                    id: id,
+                    team: team,
+                    employee: employee,
+                    timestamp: new Date().toISOString()
+                });
+            } catch (error) {
+                console.error('참가자 추가 오류:', error);
+            }
         }
 
         // 활성 참가자 목록에서 제거
-        function removeFromActiveParticipants() {
-            const activeParticipants = JSON.parse(localStorage.getItem('activeParticipants') || '[]');
-            const filtered = activeParticipants.filter(p => p.id !== participantId);
-            localStorage.setItem('activeParticipants', JSON.stringify(filtered));
+        async function removeFromActiveParticipants() {
+            if (!participantId) return;
             
-            // 다른 탭에 알림
-            window.dispatchEvent(new StorageEvent('storage', {
-                key: 'activeParticipants',
-                newValue: JSON.stringify(filtered)
-            }));
+            try {
+                await db.collection(participantsCollection).doc(participantId).delete();
+            } catch (error) {
+                console.error('참가자 제거 오류:', error);
+            }
         }
 
         // 로그인 폼 표시
@@ -349,55 +345,39 @@
             document.getElementById('employee-display').textContent = employeeNumber;
             document.getElementById('participant-id-display').textContent = participantId;
             
-            // 할당된 메시지 확인
-            checkAssignedMessage();
+            // Firebase 실시간 리스너 시작
+            startFirebaseListener();
         }
 
-        // 실시간 리스너 시작
-        function startRealtimeListener() {
-            // 초기 메시지 확인
-            checkAssignedMessage();
-            
-            // 실시간 이벤트 리스너
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'assignedMessages' || e.key === 'messageTimestamp') {
-                    checkAssignedMessage();
-                }
-            });
-            
-            // 주기적 확인 (백업용, 1초마다)
-            setInterval(checkAssignedMessage, 1000);
-        }
+        // Firebase 실시간 리스너 시작
+        function startFirebaseListener() {
+            // 기존 리스너 해제
+            if (messageUnsubscribe) {
+                messageUnsubscribe();
+            }
 
-        // 할당된 메시지 확인
-        function checkAssignedMessage() {
-            const assignedMessages = localStorage.getItem('assignedMessages');
-            const messageTimestamp = localStorage.getItem('messageTimestamp');
-            
-            if (assignedMessages && messageTimestamp) {
-                try {
-                    const messages = JSON.parse(assignedMessages);
-                    const timestamp = parseInt(messageTimestamp);
-                    
-                    // 최근 60초 내에 할당된 메시지인지 확인
-                    if (Date.now() - timestamp < 60000) {
-                        if (messages[participantId]) {
-                            currentMessage = messages[participantId];
-                            updateParticipantDisplay();
+            // 메시지 실시간 리스너
+            messageUnsubscribe = db.collection(messagesCollection).doc('current')
+                .onSnapshot((doc) => {
+                    if (doc.exists()) {
+                        const data = doc.data();
+                        if (data.assignedMessages && data.assignedMessages[participantId]) {
+                            setCurrentMessage(data.assignedMessages[participantId]);
+                        } else {
+                            setCurrentMessage('');
                         }
                     } else {
-                        // 시간이 지난 메시지는 제거
-                        currentMessage = '';
-                        updateParticipantDisplay();
+                        setCurrentMessage('');
                     }
-                } catch (error) {
-                    console.error('메시지 파싱 오류:', error);
-                }
-            } else {
-                // 메시지가 없으면 빈 화면으로
-                currentMessage = '';
-                updateParticipantDisplay();
-            }
+                }, (error) => {
+                    console.error('메시지 리스너 오류:', error);
+                });
+        }
+
+        // 메시지 설정
+        function setCurrentMessage(message) {
+            currentMessage = message;
+            updateParticipantDisplay();
         }
 
         // 참가자 화면 업데이트
@@ -414,9 +394,14 @@
             }
         }
 
-        // 페이지 언로드 시 활성 참가자 목록에서 제거
+        // 페이지 언로드 시 참가자 제거
         window.addEventListener('beforeunload', function() {
-            removeFromActiveParticipants();
+            if (participantId) {
+                removeFromActiveParticipants();
+            }
+            if (messageUnsubscribe) {
+                messageUnsubscribe();
+            }
         });
     </script>
 </body>

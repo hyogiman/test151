@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>관리자 페이지 - 엔지니어 교육 게임</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -248,6 +253,25 @@
     </div>
 
     <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyB2NNdceq5AGojaGgQ-i9t4dxPU-ccecDc",
+            authDomain: "tst1121-6983e.firebaseapp.com",
+            projectId: "tst1121-6983e",
+            storageBucket: "tst1121-6983e.firebasestorage.app",
+            messagingSenderId: "84052633103",
+            appId: "1:84052633103:web:deb08e91dfa199a524e57a",
+            measurementId: "G-8Q971YBLLE"
+        };
+
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 컬렉션 이름
+        const participantsCollection = 'participants';
+        const messagesCollection = 'messages';
+
         const messages = [
             "효율적인 코드 리뷰 프로세스를 설계해보세요",
             "마이크로서비스 아키텍처의 장단점을 분석해보세요",
@@ -267,32 +291,51 @@
         ];
 
         let currentMessage = '';
+        let activeParticipants = [];
+        let participantsUnsubscribe = null;
+        let messageUnsubscribe = null;
 
         // 페이지 로드 시 초기화
         window.onload = function() {
             // 메시지 목록 생성
             createMessageList();
             
-            // 실시간 리스너 시작
-            startRealtimeListener();
+            // Firebase 실시간 리스너 시작
+            startFirebaseListeners();
         };
 
-        // 실시간 리스너 시작
-        function startRealtimeListener() {
-            // 초기 상태 업데이트
-            updateActiveParticipantsCount();
-            
-            // 실시간 이벤트 리스너
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'activeParticipants') {
+        // Firebase 실시간 리스너 시작
+        function startFirebaseListeners() {
+            // 활성 참가자 실시간 리스너
+            participantsUnsubscribe = db.collection(participantsCollection)
+                .onSnapshot((snapshot) => {
+                    const participants = [];
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        // 5분 이내에 접속한 참가자만 활성으로 간주
+                        const timestamp = new Date(data.timestamp);
+                        const now = new Date();
+                        if ((now - timestamp) < 300000) { // 5분
+                            participants.push(data);
+                        }
+                    });
+                    activeParticipants = participants;
                     updateActiveParticipantsCount();
-                } else if (e.key === 'assignedMessages' || e.key === 'messageTimestamp') {
-                    checkCurrentMessage();
-                }
-            });
-            
-            // 주기적 확인 (백업용, 2초마다)
-            setInterval(updateActiveParticipantsCount, 2000);
+                }, (error) => {
+                    console.error('참가자 리스너 오류:', error);
+                });
+
+            // 현재 메시지 실시간 리스너
+            messageUnsubscribe = db.collection(messagesCollection).doc('current')
+                .onSnapshot((doc) => {
+                    if (doc.exists()) {
+                        setCurrentMessage('팀별로 다른 메시지가 할당되었습니다.');
+                    } else {
+                        setCurrentMessage('');
+                    }
+                }, (error) => {
+                    console.error('메시지 리스너 오류:', error);
+                });
         }
 
         // 메시지 목록 생성
@@ -309,10 +352,7 @@
         }
 
         // 랜덤 메시지 표시 (팀별로 다른 메시지, 같은 팀 내에서는 서로 다른 메시지)
-        function showRandomMessage() {
-            // 현재 활성화된 모든 참가자 가져오기
-            const activeParticipants = getActiveParticipants();
-            
+        async function showRandomMessage() {
             if (activeParticipants.length === 0) {
                 alert('⚠️ 현재 활성 참가자가 없습니다. 참가자들이 페이지를 열어주세요.');
                 return;
@@ -349,75 +389,35 @@
                 });
             });
             
-            // 로컬 스토리지에 할당된 메시지 저장
-            localStorage.setItem('assignedMessages', JSON.stringify(assignedMessages));
-            localStorage.setItem('messageTimestamp', Date.now().toString());
-            
-            // 현재 메시지 업데이트 (관리자 화면용)
-            currentMessage = '팀별로 다른 메시지가 할당되었습니다.';
-            
-            updateAdminDisplay();
-            updateMessageList();
-            
-            // 성공 메시지 표시
-            const teamCount = Object.keys(teamGroups).length;
-            alert(`✅ ${activeParticipants.length}명의 참가자 (${teamCount}개 팀)에게 메시지가 전송되었습니다!\n\n같은 팀 내에서는 서로 다른 메시지가, 다른 팀끼리는 같은 메시지가 할당될 수 있습니다.`);
+            try {
+                // Firebase에 메시지 저장
+                await db.collection(messagesCollection).doc('current').set({
+                    assignedMessages: assignedMessages,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // 성공 메시지 표시
+                const teamCount = Object.keys(teamGroups).length;
+                alert(`✅ ${activeParticipants.length}명의 참가자 (${teamCount}개 팀)에게 메시지가 전송되었습니다!\n\n같은 팀 내에서는 서로 다른 메시지가, 다른 팀끼리는 같은 메시지가 할당될 수 있습니다.`);
+            } catch (error) {
+                console.error('메시지 전송 오류:', error);
+                alert('❌ 메시지 전송에 실패했습니다.');
+            }
         }
 
         // 메시지 리셋
-        function resetMessage() {
-            currentMessage = '';
-            localStorage.removeItem('assignedMessages');
-            localStorage.removeItem('messageTimestamp');
-            updateAdminDisplay();
-            updateMessageList();
-            
-            // 성공 메시지 표시
-            alert('🔄 모든 참가자 화면이 리셋되었습니다!');
-        }
-
-        // 활성 참가자 목록 가져오기
-        function getActiveParticipants() {
+        async function resetMessage() {
             try {
-                const activeParticipants = JSON.parse(localStorage.getItem('activeParticipants') || '[]');
-                // 5분 이내에 접속한 참가자만 활성으로 간주
-                const now = Date.now();
-                const active = activeParticipants.filter(p => (now - p.timestamp) < 300000); // 5분
-                return active;
+                await db.collection(messagesCollection).doc('current').delete();
+                alert('🔄 모든 참가자 화면이 리셋되었습니다!');
             } catch (error) {
-                console.error('활성 참가자 목록 가져오기 오류:', error);
-                return [];
+                console.error('메시지 리셋 오류:', error);
+                alert('❌ 메시지 리셋에 실패했습니다.');
             }
-        }
-
-        // 관리자 화면 업데이트
-        function updateAdminDisplay() {
-            const adminCurrentMessage = document.getElementById('admin-current-message');
-            const currentMessageDisplay = document.getElementById('current-message-display');
-            
-            if (currentMessage) {
-                adminCurrentMessage.textContent = currentMessage;
-                currentMessageDisplay.style.display = 'block';
-            } else {
-                currentMessageDisplay.style.display = 'none';
-            }
-        }
-
-        // 메시지 목록 업데이트 (활성 메시지 하이라이트)
-        function updateMessageList() {
-            const messageItems = document.querySelectorAll('.message-item');
-            messageItems.forEach((item, index) => {
-                if (messages[index] === currentMessage) {
-                    item.classList.add('active');
-                } else {
-                    item.classList.remove('active');
-                }
-            });
         }
 
         // 활성 참가자 수 업데이트
         function updateActiveParticipantsCount() {
-            const activeParticipants = getActiveParticipants();
             const countElement = document.getElementById('active-participants-count');
             const participantsListElement = document.getElementById('participants-list');
             
@@ -446,20 +446,34 @@
             }
         }
 
-        // 현재 메시지 확인
-        function checkCurrentMessage() {
-            const assignedMessages = localStorage.getItem('assignedMessages');
-            const messageTimestamp = localStorage.getItem('messageTimestamp');
-            
-            if (assignedMessages && messageTimestamp) {
-                currentMessage = '팀별로 다른 메시지가 할당되었습니다.';
-            } else {
-                currentMessage = '';
-            }
-            
+        // 현재 메시지 설정
+        function setCurrentMessage(message) {
+            currentMessage = message;
             updateAdminDisplay();
-            updateMessageList();
         }
+
+        // 관리자 화면 업데이트
+        function updateAdminDisplay() {
+            const adminCurrentMessage = document.getElementById('admin-current-message');
+            const currentMessageDisplay = document.getElementById('current-message-display');
+            
+            if (currentMessage) {
+                adminCurrentMessage.textContent = currentMessage;
+                currentMessageDisplay.style.display = 'block';
+            } else {
+                currentMessageDisplay.style.display = 'none';
+            }
+        }
+
+        // 페이지 언로드 시 리스너 해제
+        window.addEventListener('beforeunload', function() {
+            if (participantsUnsubscribe) {
+                participantsUnsubscribe();
+            }
+            if (messageUnsubscribe) {
+                messageUnsubscribe();
+            }
+        });
     </script>
 </body>
 </html> 
