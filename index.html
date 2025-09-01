@@ -257,6 +257,8 @@
 
         // 로그인
         async function login() {
+            console.log('로그인 시작');
+            
             const teamInput = document.getElementById('team-input').value.trim();
             const employeeInput = document.getElementById('employee-input').value.trim();
             
@@ -266,6 +268,7 @@
             }
             
             const id = `${teamInput}_${employeeInput}`;
+            console.log('생성된 참가자 ID:', id);
             
             teamName = teamInput;
             employeeNumber = employeeInput;
@@ -278,11 +281,14 @@
             // Firebase에 참가자 추가
             await addToActiveParticipants(teamName, employeeNumber);
             
+            console.log('로그인 완료 - 메인 화면으로 이동');
             showMainScreen();
         }
 
         // 로그아웃
         async function logout() {
+            console.log('로그아웃 시작');
+            
             await removeFromActiveParticipants();
             
             // 로컬 스토리지에서 제거
@@ -295,11 +301,17 @@
                 messageUnsubscribe = null;
             }
             
-            setTeamName('');
-            setEmployeeNumber('');
-            setParticipantId('');
-            setCurrentMessage('');
+            // 변수 초기화
+            teamName = '';
+            employeeNumber = '';
+            participantId = '';
+            currentMessage = '';
             
+            // 입력 필드 초기화
+            document.getElementById('team-input').value = '';
+            document.getElementById('employee-input').value = '';
+            
+            console.log('로그아웃 완료 - 로그인 폼으로 이동');
             showLoginForm();
         }
 
@@ -331,12 +343,19 @@
 
         // 로그인 폼 표시
         function showLoginForm() {
+            console.log('로그인 폼 표시');
             document.getElementById('login-form').style.display = 'block';
             document.getElementById('main-screen').style.display = 'none';
+            
+            // 입력 필드에 포커스
+            setTimeout(() => {
+                document.getElementById('team-input').focus();
+            }, 100);
         }
 
         // 메인 화면 표시
         function showMainScreen() {
+            console.log('메인 화면 표시');
             document.getElementById('login-form').style.display = 'none';
             document.getElementById('main-screen').style.display = 'block';
             
