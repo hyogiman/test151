@@ -95,6 +95,14 @@
             background: #c0392b;
         }
 
+        .edit-button {
+            background: #f39c12;
+        }
+
+        .edit-button:hover {
+            background: #e67e22;
+        }
+
         .message-list {
             background: #f8f9fa;
             border-radius: 8px;
@@ -114,6 +122,8 @@
             text-align: left;
             font-size: 0.9rem;
             line-height: 1.4;
+            position: relative;
+            padding-right: 100px;
         }
 
         .message-item.active {
@@ -182,6 +192,26 @@
             color: #2e7d32;
         }
 
+        .participant-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin: 4px 0;
+            background: #f9f9f9;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .participant-info {
+            flex: 1;
+        }
+
+        .participant-actions {
+            display: flex;
+            gap: 5px;
+        }
+
         .participant-management {
             margin-top: 20px;
             padding: 15px;
@@ -206,6 +236,12 @@
         .small-button {
             padding: 8px 16px;
             font-size: 0.85rem;
+            margin: 0;
+        }
+
+        .mini-button {
+            padding: 4px 8px;
+            font-size: 0.7rem;
             margin: 0;
         }
 
@@ -268,7 +304,7 @@
             color: #2c3e50;
         }
 
-        .form-group input, .form-group textarea {
+        .form-group input, .form-group textarea, .form-group select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -288,18 +324,6 @@
             margin-top: 20px;
         }
 
-        .message-item {
-            background: white;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 6px;
-            border-left: 4px solid #3498db;
-            text-align: left;
-            font-size: 0.9rem;
-            line-height: 1.4;
-            position: relative;
-        }
-
         .message-item .message-actions {
             position: absolute;
             right: 10px;
@@ -309,10 +333,11 @@
             gap: 5px;
         }
 
-        .message-item .message-actions button {
-            padding: 4px 8px;
-            font-size: 0.7rem;
-            margin: 0;
+        .loading-indicator {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
         }
 
         /* 모바일 대응 */
@@ -348,6 +373,28 @@
             .message-list {
                 max-height: 200px;
             }
+
+            .message-item {
+                padding-right: 10px;
+            }
+
+            .message-item .message-actions {
+                position: static;
+                transform: none;
+                margin-top: 10px;
+                justify-content: flex-end;
+            }
+
+            .participant-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .participant-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
         }
     </style>
 </head>
@@ -374,13 +421,14 @@
         
         <div class="admin-controls">
             <div class="message-list">
-                <h3>📋 제시문 목록 (총 <span id="message-count">15</span>개)</h3>
+                <h3>📋 제시문 목록 (총 <span id="message-count">로딩 중...</span>개)</h3>
                 <div class="message-controls">
                     <button class="button small-button" onclick="showAddMessageForm()">➕ 제시문 추가</button>
-                    <button class="button small-button" onclick="showEditMessageForm()">✏️ 제시문 수정</button>
                     <button class="button small-button reset-button" onclick="resetToDefaultMessages()">🔄 기본 제시문으로 복원</button>
                 </div>
-                <div id="message-list"></div>
+                <div id="message-list">
+                    <div class="loading-indicator">메시지를 불러오는 중...</div>
+                </div>
             </div>
 
             <div class="button-group">
@@ -421,6 +469,29 @@
         </div>
     </div>
 
+    <!-- 참가자 수정 모달 -->
+    <div id="editParticipantModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">✏️ 참가자 수정</span>
+                <span class="close" onclick="closeModal('editParticipantModal')">&times;</span>
+            </div>
+            <input type="hidden" id="editParticipantId">
+            <div class="form-group">
+                <label for="editTeam">팀명:</label>
+                <input type="text" id="editTeam" placeholder="팀명을 입력하세요">
+            </div>
+            <div class="form-group">
+                <label for="editEmployee">사번:</label>
+                <input type="text" id="editEmployee" placeholder="사번을 입력하세요">
+            </div>
+            <div class="modal-buttons">
+                <button class="button" onclick="updateParticipant()">수정</button>
+                <button class="button reset-button" onclick="closeModal('editParticipantModal')">취소</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 제시문 추가 모달 -->
     <div id="addMessageModal" class="modal">
         <div class="modal-content">
@@ -446,12 +517,7 @@
                 <span class="modal-title">✏️ 제시문 수정</span>
                 <span class="close" onclick="closeModal('editMessageModal')">&times;</span>
             </div>
-            <div class="form-group">
-                <label for="editMessageIndex">제시문 번호:</label>
-                <select id="editMessageIndex">
-                    <!-- 동적으로 생성됨 -->
-                </select>
-            </div>
+            <input type="hidden" id="editMessageId">
             <div class="form-group">
                 <label for="editMessageText">제시문 내용:</label>
                 <textarea id="editMessageText" placeholder="제시문을 수정하세요"></textarea>
@@ -482,8 +548,10 @@
         // 컬렉션 이름
         const participantsCollection = 'participants';
         const messagesCollection = 'messages';
+        const systemMessagesCollection = 'systemMessages';
 
-        const messages = [
+        // 기본 메시지 (초기화용)
+        const defaultMessages = [
             "효율적인 코드 리뷰 프로세스를 설계해보세요",
             "마이크로서비스 아키텍처의 장단점을 분석해보세요",
             "데이터베이스 성능 최적화 전략을 제시해보세요",
@@ -501,22 +569,28 @@
             "실시간 데이터 처리 시스템을 설계해보세요"
         ];
 
+        let messages = [];
         let currentMessage = '';
         let activeParticipants = [];
         let participantsUnsubscribe = null;
         let messageUnsubscribe = null;
+        let systemMessagesUnsubscribe = null;
 
         // 페이지 로드 시 초기화
         window.onload = function() {
-            // 메시지 목록 생성
-            createMessageList();
+            console.log('페이지 로드 시작');
             
             // Firebase 실시간 리스너 시작
             startFirebaseListeners();
+            
+            // 시스템 메시지 로드
+            loadSystemMessages();
         };
 
         // Firebase 실시간 리스너 시작
         function startFirebaseListeners() {
+            console.log('Firebase 리스너 시작');
+            
             // 활성 참가자 실시간 리스너
             participantsUnsubscribe = db.collection(participantsCollection)
                 .onSnapshot((snapshot) => {
@@ -540,7 +614,6 @@
             messageUnsubscribe = db.collection(messagesCollection).doc('current')
                 .onSnapshot((docSnapshot) => {
                     console.log('메시지 리스너 호출됨:', docSnapshot);
-                    console.log('docSnapshot.exists:', docSnapshot.exists);
                     
                     if (docSnapshot.exists) {
                         console.log('메시지가 존재함 - 상태 업데이트');
@@ -552,6 +625,83 @@
                 }, (error) => {
                     console.error('메시지 리스너 오류:', error);
                 });
+
+            // 시스템 메시지 실시간 리스너
+            systemMessagesUnsubscribe = db.collection(systemMessagesCollection).doc('default')
+                .onSnapshot((docSnapshot) => {
+                    console.log('시스템 메시지 리스너 호출됨');
+                    
+                    if (docSnapshot.exists) {
+                        const data = docSnapshot.data();
+                        messages = data.messages || [];
+                        console.log('시스템 메시지 로드됨:', messages.length, '개');
+                    } else {
+                        console.log('시스템 메시지가 없음 - 기본 메시지 사용');
+                        messages = [...defaultMessages];
+                    }
+                    createMessageList();
+                }, (error) => {
+                    console.error('시스템 메시지 리스너 오류:', error);
+                    // 오류 시 기본 메시지 사용
+                    messages = [...defaultMessages];
+                    createMessageList();
+                });
+        }
+
+        // 시스템 메시지 로드
+        async function loadSystemMessages() {
+            try {
+                console.log('시스템 메시지 로드 시도');
+                const doc = await db.collection(systemMessagesCollection).doc('default').get();
+                
+                if (doc.exists) {
+                    const data = doc.data();
+                    messages = data.messages || [];
+                    console.log('시스템 메시지 로드 완료:', messages.length, '개');
+                } else {
+                    console.log('시스템 메시지가 없음 - 초기화 필요');
+                    await initializeSystemMessages();
+                }
+                
+                createMessageList();
+            } catch (error) {
+                console.error('시스템 메시지 로드 오류:', error);
+                // 오류 시 기본 메시지 사용
+                messages = [...defaultMessages];
+                createMessageList();
+            }
+        }
+
+        // 시스템 메시지 초기화
+        async function initializeSystemMessages() {
+            try {
+                console.log('시스템 메시지 초기화 시작');
+                await db.collection(systemMessagesCollection).doc('default').set({
+                    messages: defaultMessages,
+                    lastUpdated: new Date().toISOString()
+                });
+                messages = [...defaultMessages];
+                console.log('시스템 메시지 초기화 완료');
+            } catch (error) {
+                console.error('시스템 메시지 초기화 오류:', error);
+                messages = [...defaultMessages];
+            }
+        }
+
+        // 시스템 메시지 저장
+        async function saveSystemMessages() {
+            try {
+                console.log('시스템 메시지 저장 시작');
+                await db.collection(systemMessagesCollection).doc('default').set({
+                    messages: messages,
+                    lastUpdated: new Date().toISOString()
+                });
+                console.log('시스템 메시지 저장 완료');
+                return true;
+            } catch (error) {
+                console.error('시스템 메시지 저장 오류:', error);
+                return false;
+            }
         }
 
         // 메시지 목록 생성
@@ -562,14 +712,19 @@
             
             messageCount.textContent = messages.length;
             
+            if (messages.length === 0) {
+                messageList.innerHTML = '<div class="loading-indicator">메시지가 없습니다.</div>';
+                return;
+            }
+            
             messages.forEach((message, index) => {
                 const div = document.createElement('div');
                 div.className = 'message-item';
                 div.innerHTML = `
                     <strong>${index + 1}.</strong> ${message}
                     <div class="message-actions">
-                        <button class="button small-button" onclick="editMessage(${index})">✏️</button>
-                        <button class="button small-button reset-button" onclick="deleteMessage(${index})">🗑️</button>
+                        <button class="button mini-button edit-button" onclick="editMessage(${index})">✏️</button>
+                        <button class="button mini-button reset-button" onclick="deleteMessage(${index})">🗑️</button>
                     </div>
                 `;
                 messageList.appendChild(div);
@@ -583,6 +738,11 @@
             
             if (activeParticipants.length === 0) {
                 alert('⚠️ 현재 활성 참가자가 없습니다. 참가자들이 페이지를 열어주세요.');
+                return;
+            }
+            
+            if (messages.length === 0) {
+                alert('⚠️ 사용 가능한 메시지가 없습니다. 제시문을 먼저 추가해주세요.');
                 return;
             }
             
@@ -670,9 +830,19 @@
                 
                 let listHTML = '<h4>📋 참가자 목록:</h4>';
                 Object.keys(teamGroups).forEach(teamName => {
-                    listHTML += `<div class="team-group"><strong>${teamName}</strong>: `;
-                    const members = teamGroups[teamName].map(p => p.employee).join(', ');
-                    listHTML += `${members} (${teamGroups[teamName].length}명)</div>`;
+                    listHTML += `<div class="team-group"><strong>${teamName}</strong>:`;
+                    teamGroups[teamName].forEach(participant => {
+                        listHTML += `
+                            <div class="participant-item">
+                                <div class="participant-info">${participant.employee}</div>
+                                <div class="participant-actions">
+                                    <button class="button mini-button edit-button" onclick="editParticipant('${participant.id}', '${participant.team}', '${participant.employee}')">✏️</button>
+                                    <button class="button mini-button reset-button" onclick="deleteParticipant('${participant.id}')">🗑️</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    listHTML += '</div>';
                 });
                 
                 participantsListElement.innerHTML = listHTML;
@@ -728,6 +898,13 @@
             const id = `${team}_${employee}`;
             
             try {
+                // 중복 확인
+                const existingDoc = await db.collection(participantsCollection).doc(id).get();
+                if (existingDoc.exists) {
+                    alert('⚠️ 이미 존재하는 참가자입니다.');
+                    return;
+                }
+                
                 await db.collection(participantsCollection).doc(id).set({
                     id: id,
                     team: team,
@@ -740,6 +917,70 @@
             } catch (error) {
                 console.error('참가자 추가 오류:', error);
                 alert('❌ 참가자 추가에 실패했습니다.');
+            }
+        }
+
+        // 참가자 수정
+        function editParticipant(participantId, currentTeam, currentEmployee) {
+            document.getElementById('editParticipantId').value = participantId;
+            document.getElementById('editTeam').value = currentTeam;
+            document.getElementById('editEmployee').value = currentEmployee;
+            showModal('editParticipantModal');
+        }
+
+        async function updateParticipant() {
+            const oldId = document.getElementById('editParticipantId').value;
+            const newTeam = document.getElementById('editTeam').value.trim();
+            const newEmployee = document.getElementById('editEmployee').value.trim();
+            
+            if (!newTeam || !newEmployee) {
+                alert('팀명과 사번을 모두 입력해주세요.');
+                return;
+            }
+            
+            const newId = `${newTeam}_${newEmployee}`;
+            
+            try {
+                // 새 ID가 기존과 다르고 이미 존재하는지 확인
+                if (newId !== oldId) {
+                    const existingDoc = await db.collection(participantsCollection).doc(newId).get();
+                    if (existingDoc.exists) {
+                        alert('⚠️ 수정하려는 팀명/사번이 이미 존재합니다.');
+                        return;
+                    }
+                }
+                
+                // 기존 문서 삭제
+                await db.collection(participantsCollection).doc(oldId).delete();
+                
+                // 새 문서 추가
+                await db.collection(participantsCollection).doc(newId).set({
+                    id: newId,
+                    team: newTeam,
+                    employee: newEmployee,
+                    timestamp: new Date().toISOString()
+                });
+                
+                alert('✅ 참가자 정보가 수정되었습니다!');
+                closeModal('editParticipantModal');
+            } catch (error) {
+                console.error('참가자 수정 오류:', error);
+                alert('❌ 참가자 수정에 실패했습니다.');
+            }
+        }
+
+        // 참가자 삭제
+        async function deleteParticipant(participantId) {
+            if (!confirm(`⚠️ 참가자를 삭제하시겠습니까?`)) {
+                return;
+            }
+            
+            try {
+                await db.collection(participantsCollection).doc(participantId).delete();
+                alert('✅ 참가자가 삭제되었습니다!');
+            } catch (error) {
+                console.error('참가자 삭제 오류:', error);
+                alert('❌ 참가자 삭제에 실패했습니다.');
             }
         }
 
@@ -770,7 +1011,7 @@
             showModal('addMessageModal');
         }
 
-        function addMessage() {
+        async function addMessage() {
             const newMessage = document.getElementById('newMessage').value.trim();
             
             if (!newMessage) {
@@ -779,35 +1020,26 @@
             }
             
             messages.push(newMessage);
-            createMessageList();
-            closeModal('addMessageModal');
-            alert('✅ 제시문이 추가되었습니다!');
+            
+            const success = await saveSystemMessages();
+            if (success) {
+                closeModal('addMessageModal');
+                alert('✅ 제시문이 추가되었습니다!');
+            } else {
+                // 실패 시 배열에서 제거
+                messages.pop();
+                alert('❌ 제시문 추가에 실패했습니다.');
+            }
         }
 
-        function showEditMessageForm() {
-            const select = document.getElementById('editMessageIndex');
-            const textarea = document.getElementById('editMessageText');
-            
-            select.innerHTML = '';
-            messages.forEach((message, index) => {
-                const option = document.createElement('option');
-                option.value = index;
-                option.textContent = `${index + 1}. ${message.substring(0, 30)}...`;
-                select.appendChild(option);
-            });
-            
-            if (messages.length > 0) {
-                textarea.value = messages[0];
-                select.onchange = function() {
-                    textarea.value = messages[this.value];
-                };
-            }
-            
+        function editMessage(index) {
+            document.getElementById('editMessageId').value = index;
+            document.getElementById('editMessageText').value = messages[index];
             showModal('editMessageModal');
         }
 
-        function updateMessage() {
-            const index = parseInt(document.getElementById('editMessageIndex').value);
+        async function updateMessage() {
+            const index = parseInt(document.getElementById('editMessageId').value);
             const newText = document.getElementById('editMessageText').value.trim();
             
             if (!newText) {
@@ -815,69 +1047,53 @@
                 return;
             }
             
+            const oldMessage = messages[index];
             messages[index] = newText;
-            createMessageList();
-            closeModal('editMessageModal');
-            alert('✅ 제시문이 수정되었습니다!');
+            
+            const success = await saveSystemMessages();
+            if (success) {
+                closeModal('editMessageModal');
+                alert('✅ 제시문이 수정되었습니다!');
+            } else {
+                // 실패 시 원래 내용으로 복원
+                messages[index] = oldMessage;
+                alert('❌ 제시문 수정에 실패했습니다.');
+            }
         }
 
-        function editMessage(index) {
-            const select = document.getElementById('editMessageIndex');
-            const textarea = document.getElementById('editMessageText');
-            
-            select.innerHTML = '';
-            messages.forEach((message, i) => {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = `${i + 1}. ${message.substring(0, 30)}...`;
-                if (i === index) option.selected = true;
-                select.appendChild(option);
-            });
-            
-            textarea.value = messages[index];
-            select.onchange = function() {
-                textarea.value = messages[this.value];
-            };
-            
-            showModal('editMessageModal');
-        }
-
-        function deleteMessage(index) {
+        async function deleteMessage(index) {
             if (!confirm(`⚠️ 제시문 "${messages[index].substring(0, 30)}..."을 삭제하시겠습니까?`)) {
                 return;
             }
             
-            messages.splice(index, 1);
-            createMessageList();
-            alert('✅ 제시문이 삭제되었습니다!');
+            const deletedMessage = messages.splice(index, 1)[0];
+            
+            const success = await saveSystemMessages();
+            if (success) {
+                alert('✅ 제시문이 삭제되었습니다!');
+            } else {
+                // 실패 시 원래 위치에 복원
+                messages.splice(index, 0, deletedMessage);
+                alert('❌ 제시문 삭제에 실패했습니다.');
+            }
         }
 
-        function resetToDefaultMessages() {
+        async function resetToDefaultMessages() {
             if (!confirm('⚠️ 기본 제시문으로 복원하시겠습니까? 현재 제시문들이 모두 삭제됩니다.')) {
                 return;
             }
             
-            messages.length = 0;
-            messages.push(
-                "효율적인 코드 리뷰 프로세스를 설계해보세요",
-                "마이크로서비스 아키텍처의 장단점을 분석해보세요",
-                "데이터베이스 성능 최적화 전략을 제시해보세요",
-                "보안 취약점을 찾아내는 방법을 설명해보세요",
-                "사용자 경험을 개선하는 UI/UX 설계 원칙을 설명해보세요",
-                "클라우드 네이티브 애플리케이션 개발 방법론을 설명해보세요",
-                "DevOps 파이프라인을 구축하는 단계별 방법을 제시해보세요",
-                "대용량 데이터 처리 시스템을 설계해보세요",
-                "모바일 앱 성능 최적화 기법을 설명해보세요",
-                "API 설계의 베스트 프랙티스를 제시해보세요",
-                "테스트 자동화 전략을 수립해보세요",
-                "모니터링 및 로깅 시스템을 설계해보세요",
-                "스케일러블한 웹 애플리케이션 아키텍처를 제안해보세요",
-                "데이터 마이그레이션 전략을 수립해보세요",
-                "실시간 데이터 처리 시스템을 설계해보세요"
-            );
+            const oldMessages = [...messages];
+            messages = [...defaultMessages];
             
-            createMessageList();
-            alert('✅ 기본 제시문으로 복원되었습니다!');
+            const success = await saveSystemMessages();
+            if (success) {
+                alert('✅ 기본 제시문으로 복원되었습니다!');
+            } else {
+                // 실패 시 원래 메시지로 복원
+                messages = oldMessages;
+                alert('❌ 기본 제시문 복원에 실패했습니다.');
+            }
         }
 
         // 페이지 언로드 시 리스너 해제
@@ -888,7 +1104,11 @@
             if (messageUnsubscribe) {
                 messageUnsubscribe();
             }
+            if (systemMessagesUnsubscribe) {
+                systemMessagesUnsubscribe();
+            }
         });
     </script>
 </body>
-</html> 
+
+</html>
