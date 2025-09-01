@@ -731,7 +731,7 @@
             });
         }
 
-        // 랜덤 메시지 표시 (팀별로 다른 메시지, 같은 팀 내에서는 서로 다른 메시지)
+        // 랜덤 메시지 표시 (팀별로 다른 메시지, 각 팀마다 1명의 관찰자 지정)
         async function showRandomMessage() {
             console.log('showRandomMessage 호출됨');
             console.log('현재 활성 참가자:', activeParticipants);
@@ -759,12 +759,24 @@
             
             // 각 팀별로 메시지 할당
             const assignedMessages = {};
+            const observerInfo = {};
             
             Object.keys(teamGroups).forEach(teamName => {
                 const teamMembers = teamGroups[teamName];
+                
+                // 팀에서 랜덤하게 1명을 관찰자로 선택
+                const observerIndex = Math.floor(Math.random() * teamMembers.length);
+                const observer = teamMembers[observerIndex];
+                const nonObservers = teamMembers.filter((_, index) => index !== observerIndex);
+                
+                // 관찰자에게 특별한 메시지 할당
+                assignedMessages[observer.id] = "🔍 관찰자 역할입니다. 팀원들의 토론과 발표를 관찰하고 피드백을 준비해주세요.";
+                observerInfo[teamName] = observer.employee;
+                
+                // 나머지 팀원들에게 서로 다른 제시문 할당
                 const usedMessages = new Set();
                 
-                teamMembers.forEach(participant => {
+                nonObservers.forEach(participant => {
                     let randomIndex;
                     let attempts = 0;
                     
@@ -780,12 +792,14 @@
             });
             
             console.log('할당된 메시지:', assignedMessages);
+            console.log('관찰자 정보:', observerInfo);
             
             try {
                 // Firebase에 메시지 저장
                 const docRef = db.collection(messagesCollection).doc('current');
                 await docRef.set({
                     assignedMessages: assignedMessages,
+                    observers: observerInfo,
                     timestamp: new Date().toISOString()
                 });
                 
@@ -793,7 +807,9 @@
                 
                 // 성공 메시지 표시
                 const teamCount = Object.keys(teamGroups).length;
-                alert(`✅ ${activeParticipants.length}명의 참가자 (${teamCount}개 팀)에게 메시지가 전송되었습니다!\n\n같은 팀 내에서는 서로 다른 메시지가, 다른 팀끼리는 같은 메시지가 할당될 수 있습니다.`);
+                const observerList = Object.keys(observerInfo).map(team => `${team}: ${observerInfo[team]}`).join('\n');
+                
+                alert(`✅ ${activeParticipants.length}명의 참가자 (${teamCount}개 팀)에게 메시지가 전송되었습니다!\n\n📋 팀별 관찰자:\n${observerList}\n\n각 팀마다 1명의 관찰자가 지정되었습니다.`);
             } catch (error) {
                 console.error('메시지 전송 오류:', error);
                 alert('❌ 메시지 전송에 실패했습니다.');
