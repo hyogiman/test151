@@ -1,0 +1,15 @@
+import { initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+
+const firebaseConfig = {
+    apiKey: "AIzaSyB2NNdceq5AGojaGgQ-i9t4dxPU-ccecDc",
+    authDomain: "tst1121-6983e.firebaseapp.com",
+    projectId: "tst1121-6983e",
+    storageBucket: "tst1121-6983e.firebasestorage.app",
+    messagingSenderId: "84052633103",
+    appId: "1:84052633103:web:deb08e91dfa199a524e57a",
+    measurementId: "G-8Q971YBLLE"
+};
+
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app); 
