@@ -27,68 +27,123 @@
         }
 
         .container {
-            background: white;
-            border-radius: 12px;
-            padding: 30px 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            max-width: 500px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
             width: 100%;
-            min-height: 400px;
+            min-height: 500px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            z-index: 1;
+        }
+
+        .container > * {
+            position: relative;
+            z-index: 2;
         }
 
         .title {
-            font-size: 1.8rem;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-weight: 600;
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 30px;
+            font-weight: 700;
             text-align: center;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .subtitle {
-            font-size: 1rem;
-            color: #7f8c8d;
-            margin-bottom: 15px;
+            font-size: 1.1rem;
+            color: #5a6c7d;
+            margin-bottom: 25px;
             text-align: center;
-            line-height: 1.4;
+            line-height: 1.6;
+            font-weight: 500;
         }
 
         .message-display {
-            font-size: 1.4rem;
-            font-weight: 500;
+            font-size: 1.6rem;
+            font-weight: 600;
             color: #2c3e50;
-            margin: 20px 0;
-            min-height: 80px;
+            margin: 30px 0;
+            min-height: 120px;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
-            line-height: 1.5;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
+            line-height: 1.6;
+            padding: 30px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .message-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
         .button {
-            background: #3498db;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 12px 24px;
-            font-size: 1rem;
-            border-radius: 6px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 25px;
             cursor: pointer;
-            margin: 8px;
-            transition: all 0.2s ease;
-            font-weight: 500;
+            margin: 10px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .button:hover::before {
+            left: 100%;
         }
 
         .button:hover {
-            background: #2980b9;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
         }
 
         .button:active {
@@ -96,44 +151,77 @@
         }
 
         .reset-button {
-            background: #e74c3c;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
         }
 
         .reset-button:hover {
-            background: #c0392b;
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
         }
 
         .input-field {
             width: 100%;
-            max-width: 250px;
-            padding: 12px;
-            margin: 8px 0;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 1rem;
+            max-width: 300px;
+            padding: 15px 20px;
+            margin: 10px 0;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            font-size: 1.1rem;
             outline: none;
-            transition: border-color 0.2s;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
 
         .input-field:focus {
-            border-color: #3498db;
+            border-color: #667eea;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+            transform: translateY(-1px);
         }
 
         .info-text {
-            font-size: 0.85rem;
-            color: #95a5a6;
-            margin: 10px 0;
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            margin: 15px 0;
             text-align: center;
+            font-style: italic;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
         }
 
         .participant-info {
-            background: #f8f9fa;
-            border-radius: 6px;
-            padding: 10px;
-            margin: 10px 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
             text-align: center;
-            font-size: 0.9rem;
-            color: #6c757d;
+            font-size: 1rem;
+            color: #5a6c7d;
+            border: 2px solid #e9ecef;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .participant-info::before {
+            content: '👤';
+            font-size: 1.5rem;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .participant-info div {
+            margin: 8px 0;
+            font-weight: 500;
+        }
+
+        .participant-info strong {
+            color: #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
         }
 
         .loading {
@@ -180,22 +268,25 @@
         
         <!-- 로그인 폼 -->
         <div id="login-form">
-            <h2 class="subtitle">참가자 정보 입력</h2>
-            <div style="margin: 20px 0;">
-                <input type="text" id="team-input" placeholder="팀명을 입력하세요" class="input-field">
-                <input type="text" id="employee-input" placeholder="사번을 입력하세요" class="input-field">
+            <h2 class="subtitle">🎯 참가자 정보 입력</h2>
+            <div style="margin: 30px 0;">
+                <div class="form-group">
+                    <input type="text" id="team-input" placeholder="팀명을 입력하세요" class="input-field">
+                </div>
+                <div class="form-group">
+                    <input type="text" id="employee-input" placeholder="사번을 입력하세요" class="input-field">
+                </div>
             </div>
-            <button class="button" onclick="login()">참가하기</button>
+            <button class="button" onclick="login()">🚀 참가하기</button>
         </div>
 
         <!-- 메인 화면 -->
         <div id="main-screen" style="display: none;">
-            <p class="subtitle">관리자가 제시문을 보내면 여기에 표시됩니다</p>
+            <p class="subtitle">📝 관리자가 제시문을 보내면 여기에 표시됩니다</p>
             
             <div class="participant-info">
-                <div>팀: <span id="team-display"></span></div>
-                <div>사번: <span id="employee-display"></span></div>
-                <div>ID: <span id="participant-id-display"></span></div>
+                <div><strong>팀:</strong> <span id="team-display"></span></div>
+                <div><strong>사번:</strong> <span id="employee-display"></span></div>
             </div>
             
             <div class="message-display" id="participant-message">
@@ -203,10 +294,10 @@
             </div>
             
             <p class="info-text" id="participant-hint">
-                관리자가 "랜덤 메시지 표시" 버튼을 누르면 제시문이 나타납니다
+                💡 관리자가 "랜덤 메시지 표시" 버튼을 누르면 제시문이 나타납니다
             </p>
             
-            <button class="button reset-button" onclick="logout()">다른 계정으로 참가</button>
+            <button class="button reset-button" onclick="logout()">🔄 다른 계정으로 참가</button>
         </div>
     </div>
 
@@ -406,7 +497,6 @@
             // 정보 표시
             document.getElementById('team-display').textContent = teamName;
             document.getElementById('employee-display').textContent = employeeNumber;
-            document.getElementById('participant-id-display').textContent = participantId;
             
             // Firebase 실시간 리스너 시작
             startFirebaseListener();
